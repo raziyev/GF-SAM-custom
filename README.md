@@ -2,8 +2,9 @@
 
 > **Fork Notice**: Modified version of [GF-SAM](https://github.com/ANDYZAQ/GF-SAM/tree/master).  
 > **Key Changes**:  
-> - Added query file support for targeted segmentation  
+> - Added targeted segmentation capability via `query_file.txt` for selective image processing in FSS-1000 dataset and custom evaluation through `main_eval.py`.
 > - Optimized support image selection (no duplicates)
+
 
 ---
 
