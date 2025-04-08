@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     # Dataset parameters
     parser.add_argument('--datapath', type=str, default='datasets')
-    parser.add_argument('--queryfile', type=str, default='query_file.txt')
+    parser.add_argument('--queryfile', type=str, default=None)
     parser.add_argument('--benchmark', type=str, default='coco',
                         choices=['fss', 'coco', 'pascal', 'lvis', 'paco_part', 'pascal_part', 'deepglobe', 'isic', 'isaid'])
     parser.add_argument('--bsz', type=int, default=1)

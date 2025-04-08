@@ -1,73 +1,163 @@
 # GF-SAM (Customized Fork)
 
-> **Fork Notice**: Modified version of [GF-SAM](https://github.com/ANDYZAQ/GF-SAM/tree/master).  
-> **Key Changes**:  
-> - Added targeted segmentation capability via `query_file.txt` for selective image processing in FSS-1000 dataset and custom evaluation through `main_eval.py`.
-> - Optimized support image selection (no duplicates)
+> **Note**: This is an enhanced version of the original [GF-SAM](https://github.com/ANDYZAQ/GF-SAM/tree/master) with key improvements for Few-Shot Segmentation.
 
+## Key Improvements
+1. **Targeted Segmentation**: Process only specific images instead of the entire dataset.  
+2. **Better Support Images**: No duplicate images in support sets.  
 
 ---
+## Intallation
 
-## Installation
-- For general setup and model weights download, see original [Installation](https://github.com/ANDYZAQ/GF-SAM/blob/master/INSTALL.md) and [GETTING_STARTED.md](https://github.com/ANDYZAQ/GF-SAM/blob/master/GETTING_STARTED.md).
+### Example conda environment setup
+```python
+conda create --name gfsam python=3.13.2
+conda activate gfsam
 
-### Google Colab Instructions
+# my CUDA version is 12.4
+pip install torch==2.6.0 torchvision==0.21.0
 
-- **Skip `requirements.txt`**:  
-  If using Google Colab (as I did), you don't need to install the `requirements.txt` file.  
-  Just install these libraries after cloning the repo:
+pip install 'git+https://github.com/facebookresearch/detectron2.git'
 
-  ```python
-  !pip install tensorboardX
-  !pip install 'git+https://github.com/facebookresearch/detectron2.git'
+git clone https://github.com/raziyev/GF-SAM-custom.git
+cd GF-SAM-custom
+pip install -r requirements.txt
+```
+## Model Preparation
 
+- For model weights download, see original [GETTING_STARTED.md](https://github.com/ANDYZAQ/GF-SAM/blob/master/GETTING_STARTED.md).
 
-## Datasets
-- Download the required datasets using the official guide:  
-  [Preparing Few-Shot Segmentation Datasets](https://github.com/ANDYZAQ/GF-SAM/tree/master/datasets)
+## Dataset Preparation
 
-## Features
+#### 1. **Download**: 
+Download datasets using the [official guide](https://github.com/ANDYZAQ/GF-SAM/tree/master/datasets).  
 
-### 1. Query File Input
-Process only specific images using `query_file.txt`:
+#### 2. **Folder Structure**:
+Organize your files exactly like this:
 
-#### Format:
-```plaintext
-folder_name  image_indices  # (without .jpg extension)
+```plain text
+GF-SAM-custom/          
+└── datasets/
+    └── FSS-1000/
+        ├── data/          # All images/masks go here
+        │   ├── scratch/   # Example class folder
+        │   │   ├── 1.jpg  # Image file (numeric names only)
+        │   │   ├── 1.png  # Mask file (white=object, black=background)
+        │   │   ├── 2.jpg 
+        │   │   ├── 2.png
+        │   │    ...       # more images
+        │   ├── dent/      # Another class folder
+        │   │   ├── 1.jpg 
+        │   │   ├── 1.png
+        │   │   ├── 2.jpg
+        │   │   ├── 2.png
+        │   │   ...
+        │   ...
+        ├── splits/        # Required for evaluation
+        │    └── test.txt  # Controls which folders to process
+        │
+        └── query_file.txt # Your custom selection file (optional)
 ```
 
-#### Example:
+#### 3. **File Requirements**:
 
-    bus 6 7 8  
-    hotel_slipper 1 2 3  
+- **Images**:
+    - Naming:
+        - Only use numbers for filenames (e.g., 1.jpg, 2.png)
+        - No letters/symbols in filenames
 
-- Predicts segmentation masks only for bus/6.jpg, bus/7.jpg, bus/8.jpg and hotel_slipper/1.jpg, etc.   
+    - Types:
+        - .jpg for input images
+        - .png for mask files
+
+    - Mask Colors:
+
+        - Object: Pure white (RGB 255,255,255)
+        - Background: Pure black (RGB 0,0,0)
+
+- **test.txt configuration**:   
+    - This file determines which class folders to process.
+    - Only folders listed in test.txt will be segmented.
+
+    - File location:  
+
+    ```
+    datasets/FSS-1000/splits/test.txt
+    ```
+
+    - File format:
+    ```
+    scratch
+    dent
+    # Add other folder names here, one per line
+    ```    
 
 
-### 2. Unique Support Images
+- **query_file.txt configuration**: 
 
-- Fixed [repeated image selection](https://github.com/ANDYZAQ/GF-SAM/blob/master/matcher/data/fss.py#L90) in the support set.
+    - The `query_file.txt` lets you specify exactly which images to process, rather than segmenting all images in the dataset.   
 
-- Now guarantees unique images for better consistency.
+    - File location:  
 
+    ```
+    datasets/FSS-1000/query_file.txt
+    ```
+    - File format:
+    ```
+    folder_name  image_number1 image_number2 ...  # (no .jpg extension)
+    ```
+    - Example:  
+    Predicts segmentation masks only for dent/6.jpg, dent/7.jpg, dent/8.jpg and scratch/1.jpg, etc.    
+
+    ```
+    dent 6 7 8
+    scratch 1 2 3
+    ```
 
 ## Usage
 
-### 1. Add your query_file.txt to datasets/FSS-1000/
+### How It Works
+1. **Input Selection**:
+   - Processes only images specified in `query_file.txt`
+   - Folders must be listed in `datasets/FSS-1000/splits/test.txt`
 
-- Use the [format above](#format).
+2. **Support Set Selection**:
+   - Selects `--nshot` unique random images from remaining (query image excluded) images in the same folder
+   - Ensures no duplicate support images (fixed from original implementation)
 
-### 2. Run the model:
+3. **Output**:
+   - Implementation log file saved to `output/fss/fold0/`
+   - Visualizations saved to `output/vis/` when `--visualize 1` is set
 
-- Default (uses query_file.txt):
+### Processing Modes
+1. **Targeted Processing** (with `query_file.txt`):
+   - Only processes specified images
+   - Example: `bus 6 7 8` → processes `bus/6.jpg`, `bus/7.jpg`, `bus/8.jpg` as query
 
+2. **Full Dataset Processing** (no query file):
+   - Processes all images in folders listed in `test.txt`
+   - Uses all images as queries (original behavior)
+
+### Command Options
+
+#### 1. Custom Query File
 ```bash
-python main_eval.py --benchmark fss --nshot 1 --fold 0 --log-root "output/coco/fold0"
+python main_eval.py \
+    --datapath datasets \ 
+    --benchmark fss \          
+    --queryfile my_query.txt \  # Your custom selection (default= None)
+    --nshot 1 \                # 1 support image per query
+    --fold 0 \
+    --log-root "output/fss/fold0" \
+    --visualize 1              # Saves visualizations
 ```
-
-- Custom filename:
-
+#### 2. Process All Images
 ```bash
-python main_eval.py --benchmark fss --queryfile my_query.txt --nshot 1 --fold 0 --log-root "output/coco/fold0"
+python main_eval.py \
+    --datapath datasets \
+    --benchmark fss \
+    --nshot 1 \
+    --fold 0 \
+    --log-root "output/fss/fold0"
 ```
 
