@@ -7,6 +7,24 @@
 
 ---
 
+## Installation
+- For general setup and model weights download, see original [Installation](https://github.com/ANDYZAQ/GF-SAM/blob/master/INSTALL.md) and [GETTING_STARTED.md](https://github.com/ANDYZAQ/GF-SAM/blob/master/GETTING_STARTED.md).
+
+### Google Colab Instructions
+
+- **Skip `requirements.txt`**:  
+  If using Google Colab (as I did), you don't need to install the `requirements.txt` file.  
+  Just install these libraries after cloning the repo:
+
+  ```python
+  !pip install tensorboardX
+  !pip install 'git+https://github.com/facebookresearch/detectron2.git'
+
+
+## Datasets
+- Download the required datasets using the official guide:  
+  [Preparing Few-Shot Segmentation Datasets](https://github.com/ANDYZAQ/GF-SAM/tree/master/datasets)
+
 ## Features
 
 ### 1. Query File Input
@@ -31,6 +49,7 @@ folder_name  image_indices  # (without .jpg extension)
 
 - Now guarantees unique images for better consistency.
 
+
 ## Usage
 
 ### 1. Add your query_file.txt to datasets/FSS-1000/
@@ -50,3 +69,4 @@ python main_eval.py --benchmark fss --nshot 1 --fold 0 --log-root "output/coco/f
 ```bash
 python main_eval.py --benchmark fss --queryfile my_query.txt --nshot 1 --fold 0 --log-root "output/coco/fold0"
 ```
+
