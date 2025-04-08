@@ -15,7 +15,7 @@ from .isaid import DatasetISAID
 class FSSDataset:
 
     @classmethod
-    def initialize(cls, img_size, datapath, use_original_imgsize):
+    def initialize(cls, img_size, datapath, queryfile, use_original_imgsize):
 
         cls.datasets = {
             'coco': DatasetCOCO,
@@ -30,6 +30,7 @@ class FSSDataset:
         }
 
         cls.datapath = datapath
+        cls.queryfile = queryfile
         cls.use_original_imgsize = use_original_imgsize
 
         cls.transform = transforms.Compose([
@@ -44,7 +45,7 @@ class FSSDataset:
         shuffle = split == 'trn'
         nworker = nworker if split == 'trn' else 0
 
-        dataset = cls.datasets[benchmark](cls.datapath, fold=fold, transform=cls.transform, split=split, shot=shot, use_original_imgsize=cls.use_original_imgsize)
+        dataset = cls.datasets[benchmark](cls.datapath, cls.queryfile, fold=fold, transform=cls.transform, split=split, shot=shot, use_original_imgsize=cls.use_original_imgsize)
         dataloader = DataLoader(dataset, batch_size=bsz, shuffle=shuffle, num_workers=nworker)
 
         return dataloader

@@ -71,6 +71,7 @@ if __name__ == '__main__':
 
     # Dataset parameters
     parser.add_argument('--datapath', type=str, default='datasets')
+    parser.add_argument('--queryfile', type=str, default='query_file.txt')
     parser.add_argument('--benchmark', type=str, default='coco',
                         choices=['fss', 'coco', 'pascal', 'lvis', 'paco_part', 'pascal_part', 'deepglobe', 'isic', 'isaid'])
     parser.add_argument('--bsz', type=int, default=1)
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     Visualizer.initialize(args.visualize)
 
     # Dataset initialization
-    FSSDataset.initialize(img_size=args.img_size, datapath=args.datapath, use_original_imgsize=args.use_original_imgsize)
+    FSSDataset.initialize(img_size=args.img_size, datapath=args.datapath, queryfile=args.queryfile, use_original_imgsize=args.use_original_imgsize)
     dataloader_test = FSSDataset.build_dataloader(args.benchmark, args.bsz, args.nworker, args.fold, 'test', args.nshot)
 
     # Test GFSAM

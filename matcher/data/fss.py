@@ -10,12 +10,14 @@ import numpy as np
 
 
 class DatasetFSS(Dataset):
-    def __init__(self, datapath, fold, transform, split, shot, use_original_imgsize):
+    def __init__(self, datapath, query_file, fold, transform, split, shot, use_original_imgsize):
         self.split = split
         self.benchmark = 'fss'
         self.shot = shot
 
         self.base_path = os.path.join(datapath, 'FSS-1000/data')
+
+        self.query_file = os.path.join(datapath, f'FSS-1000/{query_file}')
 
         # Given predefined test split, load randomly generated training/val splits:
         # (reference regarding trn/val/test splits: https://github.com/HKUSTCV/FSS-1000/issues/7))
@@ -86,13 +88,20 @@ class DatasetFSS(Dataset):
         elif self.split == 'test':
             class_sample += 760
 
+        # Get all possible candidate names (1-10.jpg in same directory)
+        all_candidates = [str(i)+'.jpg' for i in range(1, 11)]
+        candidates = [f for f in all_candidates 
+                    if f != os.path.basename(query_name)]  # Exclude query image
+        
+        # Randomly select unique support samples
         support_names = []
-        while True:  # keep sampling support set if query == support
-            support_name = np.random.choice(range(1, 11), 1, replace=False)[0]
-            support_name = os.path.join(os.path.dirname(query_name), str(support_name)) + '.jpg'
-            if query_name != support_name: support_names.append(support_name)
-            if len(support_names) == self.shot: break
-
+        if len(candidates) >= self.shot:  # Ensure enough candidates exist
+            selected = np.random.choice(candidates, self.shot, replace=False)
+            support_names = [os.path.join(os.path.dirname(query_name), name) 
+                        for name in selected]
+        else:
+            raise ValueError(f"Not enough unique samples available (need {self.shot}, have {len(candidates)})")
+        
         return query_name, support_names, class_sample
 
     def build_class_ids(self):
@@ -105,10 +114,45 @@ class DatasetFSS(Dataset):
         return class_ids
 
     def build_img_metadata(self):
+
+    # def build_img_metadata(self):
         img_metadata = []
-        for cat in self.categories:
-            img_paths = sorted([path for path in glob.glob('%s/*' % os.path.join(self.base_path, cat))])
-            for img_path in img_paths:
-                if os.path.basename(img_path).split('.')[1] == 'jpg':
-                    img_metadata.append(img_path)
-        return img_metadata
+        
+        # Case 1: Query file specified
+        if hasattr(self, 'query_file') and self.query_file and os.path.exists(self.query_file):
+            with open(self.query_file, 'r') as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) >= 2:  # Need at least folder + 1 image
+                        folder = parts[0]
+                        images = parts[1:]
+                        
+                        # Check if folder exists in dataset
+                        folder_path = os.path.join(self.base_path, folder)
+                        if not os.path.exists(folder_path):
+                            print(f"Warning: Folder '{folder}' not found in dataset")
+                            continue
+                            
+                        # Add specified images
+                        for img_name in images:
+                            img_path = os.path.join(folder_path, img_name+".jpg")
+                            if os.path.exists(img_path):
+                                img_metadata.append(img_path)
+                            else:
+                                print(f"Warning: Image '{img_name}' not found in folder '{folder}'")
+        
+        # Case 2: No query file - use all categories and all images
+        else:
+            for cat in self.categories:
+                folder_path = os.path.join(self.base_path, cat)
+                if not os.path.exists(folder_path):
+                    continue
+                    
+                # Get all images in category folder
+                img_paths = glob.glob(os.path.join(folder_path, '*'))
+                for img_path in img_paths:
+                    ext = os.path.splitext(img_path)[1].lower()
+                    if ext in ['.jpg', '.jpeg', '.png']:
+                        img_metadata.append(img_path)
+        
+        return sorted(img_metadata)  # Return sorted list for consistency
