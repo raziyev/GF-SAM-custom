@@ -15,13 +15,13 @@ Process only specific images using `query_file.txt`:
 #### Format:
 ```plaintext
 folder_name  image_indices  # (without .jpg extension)
+```
 
-Example:
+#### Example:
 
     bus 6 7 8  
     hotel_slipper 1 2 3  
 
-```
 - Predicts segmentation masks only for bus/6.jpg, bus/7.jpg, bus/8.jpg and hotel_slipper/1.jpg, etc.   
 
 
@@ -35,7 +35,7 @@ Example:
 
 ### 1. Add your query_file.txt to datasets/FSS-1000/
 
-- Use the format above.
+- Use the [format above](#format).
 
 ### 2. Run the model:
 
